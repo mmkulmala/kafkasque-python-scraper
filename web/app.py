@@ -1,11 +1,9 @@
-# web/app.py
+"""Tiny Flask web UI to display latest price updates from Kafka."""
 import os
 import threading
 import json
-import time
 from kafka import KafkaConsumer
-from flask import Flask, jsonify, Response, stream_with_context
-
+from flask import Flask, jsonify
 KAFKA = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 TOPIC = os.getenv("TOPIC_PRICE_UPDATES", "price-updates")
 
@@ -14,6 +12,7 @@ latest = []        # in-memory ring buffer
 MAX_ITEMS = 100
 
 def kafka_listener():
+    """Background thread that consumes price updates and stores a small buffer."""
     consumer = KafkaConsumer(
         TOPIC,
         bootstrap_servers=[KAFKA],
@@ -30,17 +29,19 @@ def kafka_listener():
 
 @app.route("/api/latest")
 def get_latest():
+    """Return the most recent price updates as JSON."""
     return jsonify(latest)
 
 @app.route("/")
 def index():
+    """Serve a minimal HTML page that polls and renders the latest updates."""
     # very small front-end page
     return """
     <!doctype html>
     <html><head><title>Price updates</title></head>
     <body>
       <h2>Latest price updates</h2>
-      <ul id="list"></ul>
+      <ul id=\"list\"></ul>
       <script>
         async function refresh(){
           const res = await fetch('/api/latest');

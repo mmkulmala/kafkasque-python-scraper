@@ -1,10 +1,11 @@
+"""Web scraper that emits events to Kafka for downstream processing."""
+
 import os
 import time
 import json
 import requests
 from bs4 import BeautifulSoup
 from kafka import KafkaProducer
-
 KAFKA = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 TOPIC = os.getenv("TOPIC_SCRAPING_EVENTS", "scraping-events")
 URL = os.getenv("TARGET_URL", "https://httpbin.org/html")
@@ -21,7 +22,10 @@ HEADERS = {
 }
 
 def extract_price(html):
-    # naive example: adjust for your target site's DOM
+    """Extract a price-like string from the HTML document.
+
+    This is a naive example; customize selectors for the target site.
+    """
     soup = BeautifulSoup(html, "html.parser")
     # Example: find an element with class 'product-price' or fallback to body text
     el = soup.find(class_="product-price")
@@ -32,6 +36,15 @@ def extract_price(html):
     return body.get_text(strip=True)[:200] if body else "N/A"
 
 def build_event(url, price):
+    """Build the event payload to publish to Kafka.
+
+    Args:
+        url: The page URL that was scraped.
+        price: Extracted price-like string or an error message.
+
+    Returns:
+        A dict suitable for Kafka serialization.
+    """
     return {
         "timestamp": int(time.time()),
         "product_url": url,
@@ -39,12 +52,14 @@ def build_event(url, price):
     }
 
 def scrape_and_publish():
+    """Fetch the target URL, extract a price snippet, and publish to Kafka."""
     try:
         resp = requests.get(URL, headers=HEADERS, timeout=15)
         resp.raise_for_status()
+    except requests.exceptions.RequestException as err:
+        price = f"ERROR: {err}"
+    else:
         price = extract_price(resp.text)
-    except Exception as e:
-        price = "ERROR: " + str(e)
     event = build_event(URL, price)
     producer.send(TOPIC, value=event)
     producer.flush()

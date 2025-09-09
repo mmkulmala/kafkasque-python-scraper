@@ -1,8 +1,9 @@
+"""Event processor that consumes scraping events and publishes price updates."""
+
 import os
 import json
 import time
 from kafka import KafkaConsumer, KafkaProducer
-
 KAFKA = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 IN_TOPIC = os.getenv("TOPIC_SCRAPING_EVENTS", "scraping-events")
 OUT_TOPIC = os.getenv("TOPIC_PRICE_UPDATES", "price-updates")
@@ -21,16 +22,24 @@ producer = KafkaProducer(
     retries=5
 )
 
-def transform(event):
+def transform(scraping_event):
+    """Normalize basic fields on a scraping event and add processing metadata.
+
+    Args:
+        scraping_event: Dict-like event payload produced by the scraper.
+
+    Returns:
+        A new dictionary with normalized price and processed timestamp.
+    """
     # small example transformation: normalize price and add source
-    price = event.get("price", "N/A")
+    price = scraping_event.get("price", "N/A")
     if isinstance(price, str) and price.startswith("$"):
         normalized = price.replace("$", "").strip()
     else:
         normalized = price
     out = {
-        "product_url": event.get("product_url"),
-        "timestamp": event.get("timestamp"),
+        "product_url": scraping_event.get("product_url"),
+        "timestamp": scraping_event.get("timestamp"),
         "price_raw": price,
         "price_normalized": normalized,
         "processed_at": int(time.time())
