@@ -9,7 +9,6 @@ Python code for each service, a Dockerfile, and a requirements.txt
 Instructions to build & run, and notes about scaling and improvements
 
 # How to run
-Save the files in the structure shown above.
 Edit docker-compose.yml to set TARGET_URL to the page you want to scrape, and adjust SCRAPE_INTERVAL.
 
 Run and setup locally:
