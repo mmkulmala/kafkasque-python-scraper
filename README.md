@@ -14,9 +14,7 @@ Edit docker-compose.yml to set TARGET_URL to the page you want to scrape, and ad
 
 Run and setup locally:
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+./setup.sh
 ```
 
 Build & run:
